@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#FFF5E6">
+<meta name="description" content="中华字经 - 学龄前儿童识字学习应用">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>中华字经 · 识字乐园</title>
+<link rel="manifest" href="manifest.json">
+<style>
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;-webkit-tap-highlight-color:transparent;user-select:none}
+body{
+  background:linear-gradient(135deg,#FFF5E6 0%,#FFE8E8 40%,#FFF0E0 70%,#FFE4F0 100%);
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100vh;min-height:100dvh;
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+.top-bar{
+  width:100%;padding:10px 16px 6px;display:flex;flex-direction:column;gap:6px;
+  background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:2px solid rgba(255,200,150,0.3);z-index:10;flex-shrink:0;
+}
+.progress-wrap{display:flex;align-items:center;gap:10px}
+.progress-bar{flex:1;height:8px;background:rgba(200,160,120,0.25);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;width:0%;border-radius:99px;
+  background:linear-gradient(90deg,#FF9A9E,#FAD0C4,#FFD1FF);
+  transition:width 0.4s cubic-bezier(.34,1.56,.64,1)}
+.progress-text{font-size:12px;color:#B8957A;white-space:nowrap;min-width:44px;text-align:right;font-weight:600}
+
+.category-scroll{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none;padding:2px 0}
+.category-scroll::-webkit-scrollbar{display:none}
+.cat-btn{
+  display:inline-block;padding:4px 14px;margin-right:6px;border-radius:99px;
+  font-size:12px;font-weight:600;border:none;cursor:pointer;
+  background:rgba(255,255,255,0.5);color:#A08070;transition:all 0.25s;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+.cat-btn.active{background:linear-gradient(135deg,#FF9A9E,#FAD0C4);color:#fff;box-shadow:0 2px 8px rgba(255,154,158,0.4);transform:scale(1.04)}
+.cat-btn:active{transform:scale(0.95)}
+
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+.main-area{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;max-width:600px;padding:24px 20px 16px;position:relative;
+}
+
+.sentence-card{
+  width:100%;background:rgba(255,255,255,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-radius:32px;padding:32px 24px 28px;
+  box-shadow:0 8px 32px rgba(200,150,120,0.12),0 2px 8px rgba(200,150,120,0.08);
+  text-align:center;position:relative;
+  border:1px solid rgba(255,255,255,0.6);
+  transition:opacity 0.3s,transform 0.3s;
+}
+.sentence-card.game-mode{background:rgba(255,248,240,0.7)}
+.char-row{
+  display:flex;justify-content:center;gap:12px;flex-wrap:wrap;
+  min-height:100px;align-items:center;
+}
+.char-item{
+  font-size:clamp(56px,14vw,88px);font-weight:900;
+  cursor:pointer;transition:transform 0.2s,filter 0.2s;
+  line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.06);
+  position:relative;display:inline-block;
+}
+.char-item:active{transform:scale(0.88)}
+.char-item.blanked{visibility:hidden;position:relative}
+.char-item.blanked::after{
+  content:'？';visibility:visible;color:#E8837A;font-size:clamp(48px,12vw,72px);
+  animation:pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+/* favorites heart */
+.fav-btn{
+  position:absolute;top:12px;right:16px;
+  font-size:28px;background:none;border:none;cursor:pointer;
+  transition:transform 0.25s;line-height:1;
+}
+.fav-btn:active{transform:scale(0.8)}
+
+/* ============================================
+   GAME OPTIONS
+   ============================================ */
+.game-options{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
+  margin-top:20px;padding-top:16px;border-top:2px dashed rgba(200,160,120,0.2);
+}
+.game-opt-btn{
+  padding:10px 22px;border-radius:16px;border:2.5px solid #E8D5C0;
+  font-size:clamp(24px,7vw,40px);font-weight:700;
+  background:rgba(255,255,255,0.7);cursor:pointer;
+  transition:all 0.2s;min-width:60px;
+  box-shadow:0 2px 8px rgba(200,150,120,0.1);
+}
+.game-opt-btn:active{transform:scale(0.92)}
+.game-opt-btn.correct{border-color:#4CAF50;background:#E8F5E9;color:#2E7D32;animation:pop 0.35s}
+.game-opt-btn.wrong{border-color:#F44336;background:#FFEBEE;color:#C62828;animation:shake 0.4s}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.game-feedback{font-size:16px;font-weight:600;margin-top:12px;min-height:24px;transition:opacity 0.3s}
+
+/* ============================================
+   BOTTOM CONTROLS
+   ============================================ */
+.bottom-controls{
+  width:100%;max-width:600px;display:flex;justify-content:center;align-items:center;
+  gap:16px;padding:12px 20px 28px;flex-shrink:0;
+}
+.ctrl-btn{
+  width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;
+  font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.04);
+  transition:all 0.2s;gap:1px;
+  color:#fff;position:relative;
+}
+.ctrl-btn .icon{font-size:22px;line-height:1}
+.ctrl-btn .label{font-size:10px;opacity:0.9}
+.ctrl-btn:active{transform:scale(0.88);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.ctrl-btn.prev{background:linear-gradient(135deg,#A8D8EA,#C3E8F5)}
+.ctrl-btn.speak{width:72px;height:72px;background:linear-gradient(135deg,#FF9A9E,#FAD0C4);box-shadow:0 4px 20px rgba(255,154,158,0.35)}
+.ctrl-btn.next{background:linear-gradient(135deg,#FFD1A9,#FFB88C)}
+.ctrl-btn.game-toggle{background:linear-gradient(135deg,#C9B1FF,#A78BEA)}
+.ctrl-btn.fav-view{background:linear-gradient(135deg,#FFB3BA,#FF8A9E)}
+.ctrl-btn.speak.speaking{animation:speakPulse 0.8s ease-in-out infinite}
+@keyframes speakPulse{0%,100%{box-shadow:0 4px 20px rgba(255,154,158,0.35)}50%{box-shadow:0 4px 36px rgba(255,154,158,0.7);transform:scale(1.06)}}
+
+/* ============================================
+   MODALS
+   ============================================ */
+.panel-overlay{
+  position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.25);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.35s;
+}
+.panel-overlay.show{opacity:1;pointer-events:auto}
+.panel-content{
+  width:100%;max-width:500px;max-height:70vh;overflow-y:auto;
+  background:#FFFBF7;border-radius:28px 28px 0 0;padding:24px 20px 32px;
+  transform:translateY(100%);transition:transform 0.35s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 -8px 32px rgba(0,0,0,0.08);
+}
+.panel-overlay.show .panel-content{transform:translateY(0)}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.panel-header h2{font-size:18px;color:#7A6045;font-weight:700}
+.panel-close{
+  width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,0.05);
+  font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8A7560;
+}
+
+/* fav list */
+.fav-list{display:flex;flex-direction:column;gap:10px}
+.fav-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;background:rgba(255,235,220,0.4);border-radius:14px;
+  border:1px solid rgba(255,200,150,0.2);
+}
+.fav-item .chars{font-size:20px;font-weight:600}
+.fav-item .goto-btn{
+  padding:6px 14px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,#FF9A9E,#FAD0C4);color:#fff;
+  font-size:12px;font-weight:600;cursor:pointer;
+}
+.fav-empty{text-align:center;color:#B8957A;padding:32px 0;font-size:15px}
+
+/* ============================================
+   CONFETTI CANVAS
+   ============================================ */
+#confetti-canvas{
+  position:fixed;inset:0;z-index:999;pointer-events:none;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media(max-width:400px){
+  .ctrl-btn{width:52px;height:52px;gap:0}
+  .ctrl-btn .icon{font-size:20px}
+  .ctrl-btn.speak{width:64px;height:64px}
+  .char-item{font-size:clamp(48px,12vw,72px)}
+  .sentence-card{padding:24px 16px 20px}
+}
+@media(min-width:600px){
+  .char-item{font-size:88px}
+  .char-item.blanked::after{font-size:72px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="top-bar">
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText">0/0</span>
+  </div>
+  <div class="category-scroll" id="categoryScroll"></div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main-area">
+  <div class="sentence-card" id="sentenceCard">
+    <button class="fav-btn" id="favBtn" title="收藏"><span id="heartIcon">🤍</span></button>
+    <div class="char-row" id="charRow"></div>
+    <div class="game-options" id="gameOptions" style="display:none"></div>
+    <div class="game-feedback" id="gameFeedback"></div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM CONTROLS ===== -->
+<div class="bottom-controls">
+  <button class="ctrl-btn prev" id="prevBtn" title="上一句"><span class="icon">◀</span><span class="label">上一句</span></button>
+  <button class="ctrl-btn speak" id="speakBtn" title="朗读"><span class="icon">🔊</span><span class="label">朗读</span></button>
+  <button class="ctrl-btn next" id="nextBtn" title="下一句"><span class="icon">▶</span><span class="label">下一句</span></button>
+  <button class="ctrl-btn game-toggle" id="gameToggleBtn" title="游戏"><span class="icon">🎮</span><span class="label">游戏</span></button>
+  <button class="ctrl-btn fav-view" id="favViewBtn" title="收藏夹"><span class="icon">❤️</span><span class="label">收藏</span></button>
+</div>
+
+<!-- ===== FAVORITES PANEL ===== -->
+<div class="panel-overlay" id="favPanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2>❤️ 我的收藏</h2>
+      <button class="panel-close" id="favPanelClose">✕</button>
+    </div>
+    <div class="fav-list" id="favList"></div>
+  </div>
+</div>
+
+<!-- ===== CONFETTI CANVAS ===== -->
+<canvas id="confetti-canvas"></canvas>
+
+<script>
+/* ================================================================
+   DATA: 中华字经 全文
+   ================================================================ */
+const RAW_TEXT = `中华字经
+
+第一部分
+
+乾坤有序，宇宙无疆，星辰密布，斗柄指航。
+昼白夜黑，日明月亮，风驰雪舞，电闪雷响。
+云腾致雨，露结晨霜，虹霓霞辉，雾沉雹降。
+春生夏长，秋收冬藏，时令应候，寒来暑往。
+远古洪荒，海田沧桑，陆地漂移，板块碰撞。
+山岳巍峨，湖泊荡漾，植被旷野，岛撒汪洋。
+冰川冻土，沙漠沃壤，木丰树森，岩多滩广。
+鸟飞兽走，鳞潜羽翔，境态和谐，物种安详。
+形分上下，道合阴阳，幽冥杳渺，天体著彰。
+凝气为精，聚能以场，缩浓而质，积微显量。
+化巨幻虚，恍惚成象，强固凌弱，柔亦制刚。
+终极必反，存兴趋亡，色空轮回，动静恒常。
+唯实众名，一理万方，父母爹娘，没齿难忘。
+兄弟姐妹，危困助帮，姑姨叔舅，亲戚互访。
+侄男闺少，哺育茁壮，夫妻相敬，梦忆糟糠。
+隔屋邻舍，遇事谦谅，伯公妪婆，慈孝赡养。
+尊朋礼友，仁义君郎，炎黄二帝，尧舜禅让。
+禹启世袭，灭桀商汤，周武伐纣，侯列各邦。
+秦皇集权，汉刘楚项，鼎立割据，乱晋八王。
+南北对峙，腐朽隋炀，贞观政要，五代续唐。
+陈桥兵变，耻辱靖康，耶律完颜，元建宋僵。
+钟离太祖，崇祯吊丧，清军入关，大臣驻藏。
+粉碎叛卓，犁域设将，台湾复归，守卫边防。
+鸦片战争，英占香港，戊戌维新，社会改良。
+辛亥革命，孙文思想，联盟抗倭，国共两党。
+定都京师，人民解放，诸子百家，孔孟老庄。
+扁鹊灵医，鲁班巧匠，罗盘硝药，针灸疗伤。
+蔡伦毕升，鉴真玄奘，易经论语，史记达畅。
+河图洛书，算术九章，西三红水，聊儒瓶厢。
+诗词曲赋，戏剧说唱，琵琶琴瑟，锣镲铿锵。
+笙箫呜咽，卧笛悠扬，筝音奔奋，唢呐高亢。
+荆浩匡庐，董源潇湘，米芾写意，悲鸿骏昂。
+笔墨纸砚，匾楣楹榜，楷隶篆刻，碑帖草狂。
+敦煌石窟，长城伟墙，青铜甲骨，缕衣纱裳。
+虎符越剑，陶马俑葬，彩瓷宝瓮，丝绸他乡。
+凡尔赛宫，金字塔状，泰姬陵墓，彼得教堂。
+自由女神，希腊塑像，最后晚餐，创造亚当。
+亭榭楼阁，寺庙殿廊，蓬门荜户，丈室绿窗。
+府弟别墅，画栋雕梁，庭院踏步，影屏幕障。
+承尘藻井，篱笆柱桩，舷舵扶靠，凭栏眺望。
+悬崖峭壁，峰峦叠嶂，泉喷岚罩，湍急瀑宕。
+峡沟潭渊，溪涧流淌，池渠堰坝，沼泽泥塘。
+漩涡带波，礁屿连江，汹涌澎湃，惊涛骇浪。
+灾涝溢泻，汛潮浮涨，苍松寿柏，垂柳毛杨。
+芭蕉蒲扇，斑竹篾筐，槐椿榆桦，杉桂榕樟，
+斋扉紧闭，栅苑濒旁，坪埔莱茵，菲窥坞坊。
+蔷薇翩跹，莆菏蔚茫，蕴蒂荚芯，蓓蕾琳琅。
+奇花异卉，艳丽荣秧，兰荷菊梅，四季芬芳。
+杜鹃泣血，芙蓉吉祥，茉莉馥郁，玫瑰刺芒。
+瓜果蔬菜，葱蒜韭姜，茴椒芹葵，皮芥辣酱。
+芸苔芋笋，葫芦瓢瓤，番茄蘑菇，乳蛋醇酿。
+碘盐食醋，脆卜甜糖，珍馐旨甘，肴馔膏粱。
+葡萄美酒，玉液琼浆，咖啡益智，茗茶顺肠。
+桃李杏柿，汁鲜味爽，椰柚橙桔，渴饮品尝。
+菠萝柑橘，橄榄槟榔，梨枣苹楂，荔栗榴棠。
+蝌蚪摆尾，蛤蟆鼓囊，钓饵蚯蚓，蠕虫蚂蟥。
+鹦鹉学舌，蜜蜂穿忙，蝙蝠栖洞，梧桐引凰。
+蜘蛛牵补，螟蛉蛀粮，蜻蜓振翅，鸠鹏张膀。
+鸥莺燕雀，蝴蝶鸳鸯，鲤鲫鲇鲸，蛙蚌螺螃。
+蚜蛾蝉蛹，龟卵翼蝗，蚊蝇鼠蚁，蛇蝎鳝蟒。
+蜈蚣毒腺，蟋蟀蹬闯，鹿狈狐狸，熊豹豺狼。
+猿啼猴吱，鸵孵獭躺，雏猩攀梢，雌牡匿冈。
+砂舟骆驼，迅捷羚羊。
+
+第二部分
+
+中华初繁，睡狮渐醒，玖久纪末，千年始零。
+宏业昌盛，妙策递迎，左右兼顾，总揽统领。
+内取稳进，外交志同，阶梯过度，切忌狠猛。
+六贼七害，监视审听，戒贪须效，践约宜行。
+贬恶褒绩，赏劝罚惩，操刃执斧，塞涓救荧。
+势如突起，抽薪熄平，途逢险兆，消芽于萌。
+调息止纷，贵在用衡，依法谋治，官吏皆正。
+推贤荐材，睹貌辨容，纯朴宽厚，侠烈尽忠。
+耿直肃仪，襟怀袒诚，谄媚狡猾，机敏慧颖。
+懈怠懒惰，拙笨碌庸，愚昧糊涂，偏才至聪。
+羞涩拘束，杰健悍雄，恭谨畏惧，缄默持重。
+骄奢傲慢，怯懦惶恐，超逸独居，恬淡匀宁。
+猜疑诡秘，威严毅勇，币帛钱钞，攘夺其宗。
+企财盼利，价值均等，务工开厂，增富减穷。
+资产累计，税率加乘，银行贷款，储蓄倍宠。
+抵押拆借，循例不停，供给需求，市货充盈。
+销售买卖，亏差余剩，债券股票，博赌输赢。
+闻赚虽喜，跌赔癫疯，休闲退优，涣虑受逍。
+拒宾疏客，忧谢欢招，把盏讲趣，倚床读晓。
+游景筏渡，迹绝喧嚣，茂冠蔽枝，莽园出条。
+碧岭滴翠，落叶飘摇，心澄彻透，雅悦去燥。
+挥毫绎就，佳句抒了，漆珠镶眸，秀眉斜弯。
+樱口含笑，脂靥隐现，敖鼻单翘，坠耳双环。
+舒额弹腮，龙睛凤眼，纤手藕臂，软颈削肩。
+乌发比臀，酥胸腰间，修腿负躯，弓脚婷站。
+沐浴洁身，梳妆乔扮，薄黛轻施，靓耀矫莲。
+服锦饰佩，缤绫绣缎，赞叹称颂，宛若娥仙。
+阿弥陀佛，觉悟融圆，僧尼寂寞，菩萨向善。
+情投系姻，欲净见缘，转识迷性，苦乐恼烦。
+圣诞基督，原罪赎还，目的辩证，裁判邪端。
+朝觐跪拜，先知注传，我主保佑，好娃阿丹。
+格林童话，伊索寓言，莎翁托氏，福摩探案。
+但丁哥德，伽丘十谈，培根牛顿，爱因斯坦。
+试管婴儿，克隆遗传，细胞速冷，脱氧核酸。
+脉冲数码，几何规范，网络通讯，程控遥感。
+驱逐舰艇，洲际导弹，激光辐射，捆绑火箭。
+声纳测距，贫铀污染，点线面段，球弧侧弦。
+菱锥棱角，凸凹顶尖，竖撇捺折，陡拱椭圈。
+奥运竞技，淘汰筛选，跨跃短跑，蹦跳撑竿。
+铁饼标枪，垒足排篮，汽车拉力，驾舢驶帆。
+刀锤棍棒，钩爪杖鞭，锁链杠铃，摔跤击拳。
+省区署郊，村镇屯店，耕耘耧耙，播耪搅拌。
+农垦灌溉，渔猎驳船，柴棚炊热，牧畜粪烟。
+膜压窖湿，肥攻磷氮，穴浇尿深，灰埋屎浅。
+稻麦谷豆，蓖麻薯棉，粟苞芝麸，秫秸稼秆。
+糜黍荸荠，蓑稗蔗豌，埂堤垄畦，荞秕稞旱。
+禾苗缨穗，蔓附藤缠，棕榈柠檬，枫棵紫檀。
+剪丫打杈，嫁接插扦，颗粒籽核，株蕊茎杆。
+鸡鸭抱群，猪仔满圈，驴骡啃坡，犬狗护岸。
+厩驹罕鬃，驯犊乍唤，鱼鳖虾蟹，猫兔鹅蚕。
+旋绕鹰鸽，哀孤鹤雁，宿营扎寨，枕戈待旦。
+哨岗戎诫，挎锐披坚，帅旗挺拔，训士阅演。
+磐踞较劲，擎帜呼喊，伪装跟踪，信号遮掩。
+稍纵即逝，竟忽瞬暂，驭舆骋骛，靶轰州县。
+趁却骚扰，构筑壕堑，谍报频渗，御挡阻拦。
+耗损酬饲，迈历委艰，垢卸焚址，盔甩烬焰。
+擒敌破阵，调派遣返，围追堵截，伏剿全歼。
+崭旅另召，蜕衰勿厌，碉堡摧毁，拥挤逃窜。
+俘虏缴械，胜败前沿，枉允肯否，咀嚼凯宴。
+惨遭牺牲，素裹席卷，坟棺尸闹，魂魄寝眠。
+活着祈祷，死则祭奠，廉奉殉职，奖功颁衔。
+组织筹备，抚恤申签，部属僚员，涕泪潸然。
+彪炳铭册，炫烁灿烂。`;
+
+/* ================================================================
+   PARSE SENTENCES
+   ================================================================ */
+const CATEGORIES = [
+  {id:'nature',   name:'🌍 天地自然', start:0,   end:47},
+  {id:'family',   name:'👨‍👩‍👧‍👦 家庭伦理', start:48,  end:63},
+  {id:'history',  name:'📜 历史',      start:64,  end:99},
+  {id:'culture',  name:'📚 文化思想',  start:100, end:115},
+  {id:'art',      name:'🎨 文学艺术',  start:116, end:131},
+  {id:'heritage', name:'🏛️ 文物建筑',  start:132, end:159},
+  {id:'scenery',  name:'🌊 自然风景',  start:160, end:171},
+  {id:'plants',   name:'🌺 花草植物',  start:172, end:219},
+  {id:'animals',  name:'🐾 动物昆虫',  start:220, end:251},
+  {id:'modern',   name:'🚀 现代综览',  start:252, end:-1}
+];
+
+function parseSentences(text){
+  const lines = text.split('\n');
+  const sents = [];
+  for(const line of lines){
+    const trimmed = line.replace(/[，、；：。！？\s]/g,'').trim();
+    if(!trimmed || trimmed==='中华字经' || trimmed==='第一部分' || trimmed==='第二部分') continue;
+    for(let i=0; i+4<=trimmed.length; i+=4){
+      const chunk = trimmed.substring(i,i+4);
+      if(chunk.length===4 && /[\u4e00-\u9fff]/.test(chunk)){
+        sents.push(chunk);
+      }
+    }
+  }
+  return sents;
+}
+
+const ALL_SENTENCES = parseSentences(RAW_TEXT);
+
+/* ================================================================
+   STATE
+   ================================================================ */
+const STORAGE_KEY = 'zhonghua_zijing_state';
+let state = loadState();
+let isGameMode = false;
+let gameAnswer = '';
+let gameLocked = false;
+
+function defaultState(){
+  return {currentIndex:0, favorites:[], completedSet:[]};
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      if(typeof p.completedSet==='string') p.completedSet = JSON.parse(p.completedSet);
+      if(!Array.isArray(p.completedSet)) p.completedSet = [];
+      p.completedSet = [...new Set(p.completedSet.map(Number).filter(n=>!isNaN(n)))];
+      return p;
+    }
+  }catch(e){}
+  return defaultState();
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      currentIndex: state.currentIndex,
+      favorites: [...new Set(state.favorites)],
+      completedSet: [...new Set(state.completedSet)]
+    }));
+  }catch(e){}
+}
+
+/* ================================================================
+   RAINBOW COLORS
+   ================================================================ */
+const RAINBOW = ['#FF6B6B','#FF8E53','#FFC947','#51CF66','#339AF0','#7950F2','#E64980','#FF6B9D','#20C997','#F06595'];
+
+function getRandomColor(){
+  return RAINBOW[Math.floor(Math.random()*RAINBOW.length)];
+}
+
+function getCharColors(count){
+  const c = [];
+  for(let i=0; i<count; i++) c.push(getRandomColor());
+  return c;
+}
+
+/* ================================================================
+   CATEGORY HELPERS
+   ================================================================ */
+function getCategoryForIndex(idx){
+  for(let i=CATEGORIES.length-1; i>=0; i--){
+    const cat = CATEGORIES[i];
+    if(cat.end===-1){ if(idx>=cat.start) return cat; }
+    else if(idx>=cat.start && idx<=cat.end) return cat;
+  }
+  return CATEGORIES[0];
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function render(){
+  const idx = state.currentIndex;
+  const sentence = ALL_SENTENCES[idx];
+  if(!sentence) return;
+
+  const total = ALL_SENTENCES.length;
+  if(idx>=0 && idx<total){
+    document.getElementById('progressFill').style.width = ((idx+1)/total*100)+'%';
+  }
+  document.getElementById('progressText').textContent = `${idx+1}/${total}`;
+  renderCategoryButtons();
+
+  const isFav = state.favorites.includes(idx);
+  document.getElementById('heartIcon').textContent = isFav ? '❤️' : '🤍';
+
+  const charRow = document.getElementById('charRow');
+  const chars = sentence.split('');
+  charRow.innerHTML = '';
+  const colors = getCharColors(chars.length);
+
+  if(isGameMode && !gameLocked){
+    const blankIdx = Math.floor(Math.random()*chars.length);
+    gameAnswer = chars[blankIdx];
+    chars.forEach((ch,i)=>{
+      const span = document.createElement('span');
+      span.className = 'char-item'+(i===blankIdx?' blanked':'');
+      if(i!==blankIdx){ span.textContent=ch; span.style.color=colors[i]; span.addEventListener('click',()=>speakText(ch)); }
+      charRow.appendChild(span);
+    });
+    generateGameOptions(sentence, blankIdx);
+    document.getElementById('gameOptions').style.display = 'flex';
+    document.getElementById('gameFeedback').textContent = '';
+  } else {
+    chars.forEach((ch,i)=>{
+      const span = document.createElement('span');
+      span.className = 'char-item';
+      span.textContent=ch; span.style.color=colors[i];
+      span.addEventListener('click',()=>speakText(ch));
+      charRow.appendChild(span);
+    });
+    document.getElementById('gameOptions').style.display = 'none';
+    document.getElementById('gameFeedback').textContent = '';
+  }
+
+  // Mark completed on first view
+  if(!state.completedSet.includes(idx)){
+    state.completedSet.push(idx);
+    saveState();
+    if(state.completedSet.length>=Math.min(total,10)) checkAllDone(total);
+  }
+
+  document.getElementById('sentenceCard').className = 'sentence-card'+(isGameMode?' game-mode':'');
+}
+
+let confettiFired = false;
+function checkAllDone(total){
+  const done = state.completedSet.length;
+  if(done>=total && !confettiFired){
+    confettiFired=true;
+    setTimeout(launchConfetti, 400);
+  }
+  // update progress
+  document.getElementById('progressFill').style.width = (done/total*100)+'%';
+}
+
+function renderCategoryButtons(){
+  const scroll = document.getElementById('categoryScroll');
+  scroll.innerHTML = '';
+  const cur = state.currentIndex;
+  CATEGORIES.forEach(cat=>{
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.textContent = cat.name;
+    const inRange = cat.end===-1 ? cur>=cat.start : (cur>=cat.start && cur<=cat.end);
+    if(inRange) btn.classList.add('active');
+    btn.addEventListener('click',()=>{
+      state.currentIndex = Math.min(cat.start, ALL_SENTENCES.length-1);
+      saveState(); render();
+    });
+    scroll.appendChild(btn);
+  });
+}
+
+/* ================================================================
+   GAME
+   ================================================================ */
+function generateGameOptions(sentence, blankIdx){
+  const correct = sentence[blankIdx];
+  const distractors = new Set();
+  const pool = [];
+  for(const s of ALL_SENTENCES){
+    if(s!==sentence) for(const ch of s) if(ch!==correct && !pool.includes(ch)) pool.push(ch);
+  }
+  while(distractors.size<3 && distractors.size<pool.length) distractors.add(pool[Math.floor(Math.random()*pool.length)]);
+  const fallback = '天地人大小上下左右日月中水火木金土风云雨雪花草鸟虫鱼龙虎马牛羊';
+  while(distractors.size<3){ const ch=fallback[Math.floor(Math.random()*fallback.length)]; if(ch!==correct) distractors.add(ch); }
+  const all = [correct, ...distractors];
+  for(let i=all.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [all[i],all[j]]=[all[j],all[i]]; }
+  gameOptions = all;
+  const container = document.getElementById('gameOptions');
+  container.innerHTML = '';
+  all.forEach(ch=>{
+    const btn = document.createElement('button');
+    btn.className='game-opt-btn'; btn.textContent=ch;
+    btn.addEventListener('click',()=>handleGameGuess(btn,ch,correct));
+    container.appendChild(btn);
+  });
+}
+
+function handleGameGuess(btn, chosen, correct){
+  if(gameLocked) return;
+  if(chosen===correct){
+    btn.classList.add('correct');
+    document.getElementById('gameFeedback').textContent='✅ 太棒了！答对了！🎉';
+    gameLocked=true;
+    const blanked = document.querySelector('.char-item.blanked');
+    if(blanked){ blanked.textContent=correct; blanked.style.color=getRandomColor(); blanked.classList.remove('blanked'); }
+    setTimeout(()=>{ gameLocked=false; if(isGameMode) render(); }, 1500);
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('gameFeedback').textContent='❌ 再想想哦～';
+    setTimeout(()=>{ btn.classList.remove('wrong'); document.getElementById('gameFeedback').textContent=''; }, 600);
+  }
+}
+
+/* ================================================================
+   SPEECH  (百度 TTS)
+   ================================================================ */
+let _speaking = false;
+
+function speakText(text){
+  if(!text || _speaking) return;
+  _speaking = true;
+  const old = document.getElementById('tts-audio');
+  if(old) old.remove();
+  const audio = document.createElement('audio');
+  audio.id = 'tts-audio';
+  audio.crossOrigin = 'anonymous';
+  audio.src = '/tts?text='+encodeURIComponent(text);
+  audio.onended = () => { _speaking = false; };
+  audio.onerror = () => { _speaking = false; };
+  document.body.appendChild(audio);
+  audio.play().catch(()=>{ _speaking = false; });
+}
+
+function speakCurrentSentence(){
+  const s = ALL_SENTENCES[state.currentIndex];
+  if(!s) return;
+  const btn = document.getElementById('speakBtn');
+  btn.classList.add('speaking');
+  speakText(s);
+  const iv = setInterval(()=>{
+    if(!_speaking){ btn.classList.remove('speaking'); clearInterval(iv); }
+  }, 200);
+}
+
+/* ================================================================
+   CONFETTI
+   ================================================================ */
+function launchConfetti(){
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+  const pieces=[], colors=['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6B9D','#C9B1FF','#FFB347','#A8E6CF','#FF8A5C','#FFD1DC'];
+  for(let i=0;i<200;i++) pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,w:Math.random()*10+5,h:Math.random()*8+4,color:colors[Math.floor(Math.random()*colors.length)],vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,rot:Math.random()*360,rotSp:(Math.random()-0.5)*10,op:1});
+  let f=0;
+  function anim(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive=false;
+    for(const p of pieces){
+      if(p.op<=0) continue; alive=true;
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.rot+=p.rotSp; p.op-=0.003;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.globalAlpha=Math.max(0,p.op); ctx.fillStyle=p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+    }
+    f++;
+    if(alive && f<300) requestAnimationFrame(anim);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  anim();
+}
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function goPrev(){
+  if(state.currentIndex>0){ isGameMode=false; gameLocked=false; state.currentIndex--; saveState(); render(); }
+}
+function goNext(){
+  if(state.currentIndex<ALL_SENTENCES.length-1){ isGameMode=false; gameLocked=false; state.currentIndex++; saveState(); render(); }
+}
+
+/* ================================================================
+   FAVORITES
+   ================================================================ */
+function toggleFavorite(){
+  const idx=state.currentIndex;
+  const p=state.favorites.indexOf(idx);
+  if(p>=0) state.favorites.splice(p,1); else state.favorites.push(idx);
+  saveState(); render();
+}
+
+function showFavorites(){
+  const panel=document.getElementById('favPanel');
+  const list=document.getElementById('favList');
+  list.innerHTML='';
+  if(!state.favorites.length){
+    list.innerHTML='<div class="fav-empty">还没有收藏哦，❤️ 点击收藏喜欢的句子吧！</div>';
+  } else {
+    state.favorites.forEach(idx=>{
+      const s=ALL_SENTENCES[idx]; if(!s) return;
+      const item=document.createElement('div'); item.className='fav-item';
+      item.innerHTML='<span class="chars">'+s+'</span><button class="goto-btn" data-idx="'+idx+'">查看</button>';
+      item.querySelector('.goto-btn').addEventListener('click',()=>{ isGameMode=false; gameLocked=false; state.currentIndex=idx; saveState(); panel.classList.remove('show'); render(); });
+      list.appendChild(item);
+    });
+  }
+  panel.classList.add('show');
+}
+
+function toggleGameMode(){
+  isGameMode=!isGameMode; gameLocked=false;
+  if(isGameMode) document.getElementById('gameFeedback').textContent='🎯 选正确的字填进空格吧！';
+  render();
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+function init(){
+  if(state.currentIndex>=ALL_SENTENCES.length) state.currentIndex=0;
+  render();
+
+  document.getElementById('prevBtn').addEventListener('click',goPrev);
+  document.getElementById('nextBtn').addEventListener('click',goNext);
+  document.getElementById('speakBtn').addEventListener('click',speakCurrentSentence);
+  document.getElementById('favBtn').addEventListener('click',toggleFavorite);
+  document.getElementById('gameToggleBtn').addEventListener('click',toggleGameMode);
+  document.getElementById('favViewBtn').addEventListener('click',showFavorites);
+  document.getElementById('favPanelClose').addEventListener('click',()=>document.getElementById('favPanel').classList.remove('show'));
+  document.getElementById('favPanel').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.target.classList.remove('show'); });
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowLeft') goPrev();
+    else if(e.key==='ArrowRight') goNext();
+    else if(e.key===' '){ e.preventDefault(); speakCurrentSentence(); }
+  });
+
+  if(window.speechSynthesis){
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
+  }
+
+  document.getElementById('progressText').textContent=(state.currentIndex+1)+'/'+ALL_SENTENCES.length;
+
+  // Register service worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
