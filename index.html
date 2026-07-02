@@ -608,19 +608,38 @@ function handleGameGuess(btn, chosen, correct){
 }
 
 /* ================================================================
-   SPEECH  (百度 TTS)
+   SPEECH  (Web Speech API 优先，SW TTS 代理兜底)
    ================================================================ */
 let _speaking = false;
+let _speakTimer = null;
 
 function speakText(text){
-  if(!text || _speaking) return;
+  if(!text) return;
+  // 方案1: Web Speech API
+  if(window.speechSynthesis){
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang='zh-CN'; utter.rate=0.75; utter.pitch=1.1; utter.volume=1;
+    const voices = window.speechSynthesis.getVoices();
+    const zh = voices.find(v=>v.lang.startsWith('zh'));
+    if(zh) utter.voice = zh;
+    _speaking = true;
+    utter.onend = () => { _speaking = false; };
+    utter.onerror = () => { _speaking = false; tentFallback(text); };
+    window.speechSynthesis.speak(utter);
+    return;
+  }
+  tentFallback(text);
+}
+
+function tentFallback(text){
+  if(_speaking) return;
   _speaking = true;
   const old = document.getElementById('tts-audio');
   if(old) old.remove();
   const audio = document.createElement('audio');
   audio.id = 'tts-audio';
-  audio.crossOrigin = 'anonymous';
-  audio.src = '/tts?text='+encodeURIComponent(text);
+  audio.src = './tts?text='+encodeURIComponent(text);
   audio.onended = () => { _speaking = false; };
   audio.onerror = () => { _speaking = false; };
   document.body.appendChild(audio);
@@ -633,8 +652,9 @@ function speakCurrentSentence(){
   const btn = document.getElementById('speakBtn');
   btn.classList.add('speaking');
   speakText(s);
-  const iv = setInterval(()=>{
-    if(!_speaking){ btn.classList.remove('speaking'); clearInterval(iv); }
+  if(_speakTimer) clearInterval(_speakTimer);
+  _speakTimer = setInterval(()=>{
+    if(!_speaking){ btn.classList.remove('speaking'); clearInterval(_speakTimer); _speakTimer=null; }
   }, 200);
 }
 
