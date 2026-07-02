@@ -608,13 +608,48 @@ function handleGameGuess(btn, chosen, correct){
 }
 
 /* ================================================================
-   SPEECH  (Web Speech API 优先，SW TTS 代理兜底)
+   SPEECH  (Web Speech API 优先，SW TTS 代理兜底，微信 webview 特殊处理)
    ================================================================ */
 let _speaking = false;
 let _speakTimer = null;
+let _audioUnlocked = false; // 微信内需要用户先点一次解锁音频
+
+// 检测是否在微信 webview 内
+function isWechatWebview(){
+  return /MicroMessenger/i.test(navigator.userAgent) && !/miniprogram/i.test(navigator.userAgent);
+}
+
+// 微信内音频解锁引导
+function showWechatAudioUnlock(){
+  if(!isWechatWebview() || _audioUnlocked) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'wechat-audio-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;padding:30px;border-radius:20px;max-width:80%;text-align:center;">
+      <div style="font-size:18px;color:#333;margin-bottom:15px;">🎤 音频播放提示</div>
+      <div style="color:#666;margin-bottom:20px;line-height:1.5;">微信内需要先点击下方按钮启用音频播放功能，之后才能正常朗读。</div>
+      <button id="unlock-audio-btn" style="background:#07c160;color:#fff;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;">点击启用音频</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('unlock-audio-btn').addEventListener('click', function(){
+    _audioUnlocked = true;
+    document.body.removeChild(overlay);
+    // 播放一个静音音频以解锁后续播放
+    const dummy = new Audio();
+    dummy.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+    dummy.play().then(() => dummy.remove()).catch(() => {});
+  });
+}
 
 function speakText(text){
   if(!text) return;
+  // 微信内且未解锁，显示引导
+  if(isWechatWebview() && !_audioUnlocked){
+    showWechatAudioUnlock();
+    return;
+  }
   // 方案1: Web Speech API
   if(window.speechSynthesis){
     window.speechSynthesis.cancel();
@@ -644,6 +679,13 @@ function tentFallback(text){
   audio.onerror = () => { _speaking = false; };
   document.body.appendChild(audio);
   audio.play().catch(()=>{ _speaking = false; });
+}
+
+// 页面加载后检测微信环境
+if(isWechatWebview()){
+  setTimeout(() => {
+    if(!_audioUnlocked) showWechatAudioUnlock();
+  }, 1000);
 }
 
 function speakCurrentSentence(){
