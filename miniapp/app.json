@@ -1,0 +1,17 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "中华字经 · 识字乐园",
+    "navigationBarBackgroundColor": "#FFF5E6",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFF5E6"
+  },
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.6",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

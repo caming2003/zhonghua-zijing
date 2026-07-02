@@ -1,0 +1,92 @@
+<view class="page">
+
+  <!-- 顶部栏 -->
+  <view class="top-bar">
+    <view class="progress-wrap">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width:{{progressPercent}}%"></view>
+      </view>
+      <text class="progress-text">{{progressText}}</text>
+    </view>
+    <scroll-view class="category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="cat-btn {{cat.active?'active':''}}" 
+            wx:for="{{categories}}" wx:key="id" 
+            data-start="{{item.start}}"
+            bindtap="onCategoryTap">{{item.name}}</view>
+    </scroll-view>
+  </view>
+
+  <!-- 主区域 -->
+  <view class="main-area">
+    <view class="sentence-card {{isGameMode?'game-mode':''}}">
+      <!-- 收藏按钮 -->
+      <view class="fav-btn" bindtap="onToggleFav">{{isFav ? '❤️' : '🤍'}}</view>
+
+      <!-- 字符展示行 -->
+      <view class="char-row">
+        <text class="char-item {{item.blanked?'blanked':''}}" 
+              wx:for="{{charItems}}" wx:key="idx"
+              style="color:{{item.blanked?'':item.color}}"
+              data-char="{{item.char}}"
+              data-idx="{{index}}"
+              bindtap="onCharTap">{{item.blanked ? '？' : item.char}}</text>
+      </view>
+
+      <!-- 游戏选项 -->
+      <view class="game-options" wx:if="{{isGameMode}}">
+        <view class="game-opt-btn {{item.correct?'correct':''}} {{item.wrong?'wrong':''}}"
+              wx:for="{{gameOptions}}" wx:key="opt"
+              data-char="{{item.char}}"
+              bindtap="onGameGuess">{{item.char}}</view>
+      </view>
+      <view class="game-feedback" wx:if="{{isGameMode}}">{{gameFeedback}}</view>
+    </view>
+  </view>
+
+  <!-- 底部控制栏 -->
+  <view class="bottom-controls">
+    <view class="ctrl-btn prev" bindtap="onPrev">
+      <text class="icon">◀</text><text class="label">上一句</text>
+    </view>
+    <view class="ctrl-btn speak" bindtap="onSpeak">
+      <text class="icon">🔊</text><text class="label">朗读</text>
+    </view>
+    <view class="ctrl-btn next" bindtap="onNext">
+      <text class="icon">▶</text><text class="label">下一句</text>
+    </view>
+    <view class="ctrl-btn game-toggle" bindtap="onToggleGame">
+      <text class="icon">🎮</text><text class="label">游戏</text>
+    </view>
+    <view class="ctrl-btn fav-view" bindtap="onShowFav">
+      <text class="icon">❤️</text><text class="label">收藏</text>
+    </view>
+  </view>
+
+</view>
+
+<!-- 收藏面板(底部弹出) -->
+<view class="panel-overlay {{showFavPanel?'show':''}}" bindtap="onHideFav">
+  <view class="panel-content" catchtap="">
+    <view class="panel-header">
+      <text class="panel-title">❤️ 我的收藏</text>
+      <view class="panel-close" bindtap="onHideFav">✕</view>
+    </view>
+    <view class="fav-list">
+      <block wx:if="{{favorites.length===0}}">
+        <view class="fav-empty">还没有收藏哦，❤️ 点击收藏喜欢的句子吧！</view>
+      </block>
+      <view class="fav-item" wx:for="{{favorites}}" wx:key="idx">
+        <text class="chars">{{item.text}}</text>
+        <view class="goto-btn" data-idx="{{item.idx}}" bindtap="onGotoFav">查看</view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 撒花画布 -->
+<canvas type="2d" id="confetti-canvas" class="confetti-canvas" wx:if="{{showConfetti}}"></canvas>
+
+<!-- 大字提示 -->
+<view class="toast-overlay {{showToast?'show':''}}" bindtap="onHideToast">
+  <text class="toast-char">{{toastChar}}</text>
+</view>
