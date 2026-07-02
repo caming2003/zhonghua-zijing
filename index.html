@@ -630,6 +630,7 @@ function showWechatAudioUnlock(){
       <div style="font-size:18px;color:#333;margin-bottom:15px;">🎤 音频播放提示</div>
       <div style="color:#666;margin-bottom:20px;line-height:1.5;">微信内需要先点击下方按钮启用音频播放功能，之后才能正常朗读。</div>
       <button id="unlock-audio-btn" style="background:#07c160;color:#fff;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;">点击启用音频</button>
+      <div style="margin-top:15px;font-size:14px;color:#999;">（如果点击后仍无声音，请尝试在浏览器中打开）</div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -640,6 +641,16 @@ function showWechatAudioUnlock(){
     const dummy = new Audio();
     dummy.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
     dummy.play().then(() => dummy.remove()).catch(() => {});
+    // 立即测试播放一个真实音频，验证是否成功解锁
+    setTimeout(() => {
+      const testAudio = new Audio();
+      testAudio.src = './tts?text=测试';
+      testAudio.volume = 0.3;
+      testAudio.play().catch(e => {
+        console.warn('微信音频解锁后仍无法播放:', e);
+        alert('音频播放可能仍被限制，建议在手机浏览器中打开此页面。');
+      });
+    }, 300);
   });
 }
 

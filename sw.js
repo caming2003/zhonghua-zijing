@@ -1,5 +1,5 @@
 /* 中华字经 · 识字乐园 - Service Worker */
-const CACHE = 'zhonghua-zijing-v2';
+const CACHE = 'zhonghua-zijing-v3'; // 更新版本号强制刷新缓存
 const URLS = ['index.html','manifest.json'];
 
 self.addEventListener('install', e => {
